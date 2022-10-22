@@ -27,6 +27,7 @@ Interface changes
 ::
 
  --- mpv 0.36.0 ---
+    - add `--drm-hdr-metadata
     - add the `--vo=kitty` video output driver, as well as the options
       `--vo-kitty-cols`, `--vo-kitty-rows`, `--vo-kitty-width`,
       `--vo-kitty-height`, `--vo-kitty-left`, `--vo-kitty-top`,
