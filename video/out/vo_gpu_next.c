@@ -265,7 +265,7 @@ static void update_overlays(struct vo *vo, struct mp_osd_res res, double pts,
         ok = pl_tex_upload(p->gpu, &(struct pl_tex_transfer_params) {
             .tex        = entry->tex,
             .rc         = { .x1 = item->packed_w, .y1 = item->packed_h, },
-            .stride_w   = item->packed->stride[0] / tex_fmt->texel_size,
+            .row_pitch  = item->packed->stride[0],
             .ptr        = item->packed->planes[0],
         });
         if (!ok) {
@@ -882,6 +882,7 @@ static void draw_frame(struct vo *vo, struct vo_frame *frame)
 
         pl_queue_push(p->queue, &(struct pl_source_frame) {
             .pts = mpi->pts,
+            .duration = frame->ideal_frame_duration,
             .frame_data = mpi,
             .map = map_frame,
             .unmap = unmap_frame,
@@ -901,8 +902,13 @@ static void draw_frame(struct vo *vo, struct vo_frame *frame)
             hint.primaries = mp_prim_to_pl(opts->target_prim);
         if (opts->target_trc)
             hint.transfer = mp_trc_to_pl(opts->target_trc);
-        if (opts->target_peak)
+        if (opts->target_peak) {
             hint.hdr.max_luma = opts->target_peak;
+            mpv_context_csp.sig_peak = opts->target_peak / MP_REF_WHITE;
+        }
+
+        if (hint.hdr.max_luma)
+            mpv_context_csp.light =  hint.hdr.max_luma;
 
         // FIXME: placebo vs mpv context order of call, actually making use
         //        of the result.
@@ -956,7 +962,6 @@ static void draw_frame(struct vo *vo, struct vo_frame *frame)
             .pts = frame->current->pts + vsync_offset,
             .radius = pl_frame_mix_radius(&p->params),
             .vsync_duration = frame->vsync_interval,
-            .frame_duration = frame->ideal_frame_duration,
             .interpolation_threshold = opts->interpolation_threshold,
         };
 

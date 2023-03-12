@@ -529,9 +529,12 @@ int drm_create_hdr_metadata(struct drm_atomic_context *ctx, struct drm_hdr *hdr_
     if (metadata.hdmi_metadata_type1.eotf != DRM_METADATA_EOTF_TRADITIONAL_SDR) {
         // Convert to nits (cd/m2):
         float min_luminance = 0.0;
-        float max_luminance = csp->sig_peak * MP_REF_WHITE;
-        float max_cll = max_luminance;
-        float max_fall = max_luminance;
+        float target_peak = fminf(csp->sig_peak * MP_REF_WHITE, csp->light);
+        float mastering_max = fmaxf(target_peak, 500.0f);
+        float max_cll = target_peak;
+        float max_fall = target_peak;
+
+        printf("MDL %.2f, MaxCLL/FALL %.2f\n", mastering_max, max_cll);
  
         // 0x0000 to 0xC350 maps to 0.0 - 1.0000. Step of 0.00002
         metadata.hdmi_metadata_type1.display_primaries[0].x = clamp16_round(colors.red.x);
@@ -551,7 +554,7 @@ int drm_create_hdr_metadata(struct drm_atomic_context *ctx, struct drm_hdr *hdr_
 
         // Max Luminance: 16-bit value in units of 1 cd/m2
         // 0x0001 represents 1 cd/m2 and 0xFFFF represents 65535 cd/m2.
-        metadata.hdmi_metadata_type1.max_display_mastering_luminance = clamp16(ceilf(max_luminance));
+        metadata.hdmi_metadata_type1.max_display_mastering_luminance = clamp16(ceilf(mastering_max));
 
         // Max Content Light Level: 16-bit value in units of 1 cd/m2
         // 0x0001 represents 1 cd/m2 and 0xFFFF represents 65535 cd/m2.

@@ -486,6 +486,14 @@ static bool drm_egl_colorspace_hint(struct ra_swapchain *sw,
 
     if (csp_hint_frame) {
         p->hdr_data.new_csp = csp_hint_frame->params.color;
+
+        if (configured_csp) {
+            if (configured_csp->sig_peak)
+                p->hdr_data.new_csp.sig_peak = configured_csp->sig_peak;
+            if (configured_csp->light)
+                p->hdr_data.new_csp.light = configured_csp->light;
+        }
+
         return true;
     }
     return false;
